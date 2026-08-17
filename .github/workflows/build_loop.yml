@@ -3,9 +3,9 @@ run-name: Build Loop (${{ github.ref_name }})
 on:
   workflow_dispatch:
   schedule:
-    # Check for updates every Sunday
-    #   Later logic builds if there are updates or if it is the 2nd Sunday of the month
-    - cron: "33 7 * * 0" # Sunday at UTC 7:33
+    # Sync and build on the 1st of each month at 08:00 UTC
+    #   Later logic builds if there are updates or if it is the 1st of the month
+    - cron: "0 8 1 * *"
 
 env:
   GH_PAT: ${{ secrets.GH_PAT }}
@@ -22,7 +22,7 @@ jobs:
       contents: write
     outputs:
       NEW_COMMITS: ${{ steps.sync.outputs.has_new_commits }}
-      IS_SECOND_IN_MONTH: ${{ steps.date-check.outputs.is_second_instance }}
+      IS_FIRST_OF_MONTH: ${{ steps.date-check.outputs.is_first_of_month }}
 
     # Check GH_PAT, sync repository, check day in month
     steps:
@@ -136,16 +136,15 @@ jobs:
           echo "If you want to enable automatic builds and updates for your Loop, please follow the instructions \
                 under the following path <code>LoopWorkspace/fastlane/testflight.md</code>." >> $GITHUB_STEP_SUMMARY
 
-      # Set a logic flag if this is the second instance of this day-of-week in this month
-      - name: Check if this is the second time this day-of-week happens this month
+      # Set a logic flag if today is the 1st of the month
+      - name: Check if today is the first of the month
         id: date-check
         run: |
           DAY_OF_MONTH=$(date +%-d)
-          WEEK_OF_MONTH=$(( ($(date +%-d) - 1) / 7 + 1 ))
-          if [[ $WEEK_OF_MONTH -eq 2 ]]; then
-            echo "is_second_instance=true" >> "$GITHUB_OUTPUT"
+          if [[ $DAY_OF_MONTH -eq 1 ]]; then
+            echo "is_first_of_month=true" >> "$GITHUB_OUTPUT"
           else
-            echo "is_second_instance=false" >> "$GITHUB_OUTPUT"
+            echo "is_first_of_month=false" >> "$GITHUB_OUTPUT"
           fi
 
   # Checks if Distribution certificate is present and valid, optionally nukes and
@@ -158,7 +157,7 @@ jobs:
       secrets: inherit
       if: |
         github.event_name == 'workflow_dispatch' ||
-          (vars.SCHEDULED_BUILD != 'false' && needs.check_status.outputs.IS_SECOND_IN_MONTH == 'true') ||
+          (vars.SCHEDULED_BUILD != 'false' && needs.check_status.outputs.IS_FIRST_OF_MONTH == 'true') ||
           (vars.SCHEDULED_SYNC != 'false' && needs.check_status.outputs.NEW_COMMITS == 'true' )
 
   # Builds Loop
@@ -169,9 +168,9 @@ jobs:
     permissions:
       contents: write
     if:
-      | # builds with manual start; if scheduled: once a month or when new commits are found
+      | # builds with manual start; if scheduled: on the 1st of each month or when new commits are found
       github.event_name == 'workflow_dispatch' ||
-        (vars.SCHEDULED_BUILD != 'false' && needs.check_status.outputs.IS_SECOND_IN_MONTH == 'true') ||
+        (vars.SCHEDULED_BUILD != 'false' && needs.check_status.outputs.IS_FIRST_OF_MONTH == 'true') ||
         (vars.SCHEDULED_SYNC != 'false' && needs.check_status.outputs.NEW_COMMITS == 'true' )
     steps:
       - name: Select Xcode version
