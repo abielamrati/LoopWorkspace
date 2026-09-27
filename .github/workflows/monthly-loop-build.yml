@@ -2,20 +2,16 @@ name: Monthly Loop Build
 
 on:
   schedule:
-    - cron: "0 8 1 * *" # 08:00 UTC, le 1er de chaque mois
+    - cron: "0 8 1 * *"
   workflow_dispatch:
 
 jobs:
   dispatch-build:
     runs-on: ubuntu-latest
     steps:
-        - name: Start the official Loop build
+      - name: Enable and start the official Loop build
         env:
-            GH_TOKEN: ${{ secrets.GH_PAT }}
-            run: gh workflow run build_loop.yml --repo "$GITHUB_REPOSITORY" --ref main
-        - name: Enable and start the official Loop build
-        env:
-            GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-            gh workflow enable build_loop.yml --repo "$GITHUB_REPOSITORY"
-            gh workflow run build_loop.yml --repo "$GITHUB_REPOSITORY" --ref main
+          gh workflow enable build_loop.yml --repo "$GITHUB_REPOSITORY"
+          gh workflow run build_loop.yml --repo "$GITHUB_REPOSITORY" --ref main
