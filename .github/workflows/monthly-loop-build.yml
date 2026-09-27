@@ -9,7 +9,13 @@ jobs:
   dispatch-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Start the official Loop build
+        - name: Start the official Loop build
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: gh workflow run build_loop.yml --repo "$GITHUB_REPOSITORY" --ref main
+            GH_TOKEN: ${{ secrets.GH_PAT }}
+            run: gh workflow run build_loop.yml --repo "$GITHUB_REPOSITORY" --ref main
+        - name: Enable and start the official Loop build
+        env:
+            GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+            gh workflow enable build_loop.yml --repo "$GITHUB_REPOSITORY"
+            gh workflow run build_loop.yml --repo "$GITHUB_REPOSITORY" --ref main
